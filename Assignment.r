@@ -181,8 +181,8 @@ bestarima(oil1, 14)
 
 #fit train
 dx_cut  <- (l_yq) * .8
-train   <- oil1[1:dx_cut,]
-fit     <- oil1[(dx_cut + 1):l_yq,]
+train   <- oil[1:dx_cut, ]
+fit     <- oil[(dx_cut + 1):l_yq, ]
 fit_l   <- - dx_cut - 1 + l_yq
 type1 <- c("none", "const", "trend", "both")
 # lag length
