@@ -1,4 +1,10 @@
-setwd(getwd())
+---
+title: "Assignement"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
 library(xts)
 library(zoo)
 library(MultipleBubbles)
@@ -8,8 +14,9 @@ library(flexmix)
 library(forecast)
 library(vars)
 library(ggplot2)
-#function
+library(knitr)
 
+#function
 adf_test <- function(timeseries) { # nolint
 
     out <- matrix(NA, nrow = 0, ncol = 7)
@@ -71,7 +78,6 @@ adf_test <- function(timeseries) { # nolint
 return(out)
 
 }
-
 time_series_plot <- function(timeseries) {
     out1 <- plot(timeseries)
     out2 <- acf(timeseries)
@@ -137,8 +143,74 @@ bestarima <- function(timeseries, maxlag) {
     q <- model1[which.min(model1[, "BIC"]), "q"]
     out <- arima(timeseries, order = c(p, 0, q))
     acf(out$residuals)
-   return(c(p,q))
+   return(c(p, q))
 }
+
+arroots <- function(object){
+  if(!("Arima" %in% class(object)) &
+     !("ar" %in% class(object)))
+    stop("object must be of class Arima or ar")
+  if("Arima" %in% class(object))
+    parvec <- object$model$phi
+  else
+    parvec <- object$ar
+  if(length(parvec) > 0)
+  {
+    last.nonzero <- max(which(abs(parvec) > 1e-08))
+    if (last.nonzero > 0)
+      return(structure(list(
+          roots=polyroot(c(1,-parvec[1:last.nonzero])),
+          type="AR"),
+        class='armaroots'))
+  }
+  return(structure(list(roots=numeric(0), type="AR"),
+    class='armaroots'))
+}
+
+# Compute MA roots
+maroots <- function(object)
+{
+  if(!("Arima" %in% class(object)))
+    stop("object must be of class Arima")
+  parvec <- object$model$theta
+  if(length(parvec) > 0)
+  {
+    last.nonzero <- max(which(abs(parvec) > 1e-08))
+    if (last.nonzero > 0)
+      return(structure(list(
+          roots=polyroot(c(1,parvec[1:last.nonzero])),
+          type="MA"),
+        class='armaroots'))
+  }
+  return(structure(list(roots=numeric(0), type="MA"),
+    class='armaroots'))
+}
+
+plot.armaroots <- function(x, xlab="Real", ylab="Imaginary",
+    main=paste("Inverse roots of", x$type,
+          "characteristic polynomial"),
+    ...){
+  oldpar <- par(pty='s')
+  on.exit(par(oldpar))
+  plot(c(-1,1), c(-1,1), xlab=xlab, ylab=ylab,
+       type="n", bty="n", xaxt="n", yaxt="n", main=main, ...)
+  axis(1, at=c(-1,0,1), line=0.5, tck=-0.025)
+  axis(2, at=c(-1,0,1), label=c("-i","0","i"),
+    line=0.5, tck=-0.025)
+  circx <- seq(-1,1,l=501)
+  circy <- sqrt(1-circx^2)
+  lines(c(circx,circx), c(circy,-circy), col='gray')
+  lines(c(-2,2), c(0,0), col='gray')
+  lines(c(0,0), c(-2,2), col='gray')
+  if(length(x$roots) > 0)
+  {
+    inside <- abs(x$roots) > 1
+    points(1/x$roots[inside], pch=19, col='black')
+    if(sum(!inside) > 0)
+      points(1/x$roots[!inside], pch=19, col='red')
+  }
+}
+
 #import dataser
 
 oil     <- read.csv(file = "oil_data_1.csv")
@@ -147,52 +219,63 @@ oil     <- read.csv(file = "oil_data_1.csv")
 from    <- as.Date("1973-02-01")
 to      <- as.Date("2007-12-01")
 
+
+
+
+```
+
+# Point 1
+
+The heading is denoted with the hashtag (#) and a space. Review the pandoc markdown 
+to see what's available knowing you can always write customized 
+HTML or LaTeX as needed.
+
+```{r point1, echo=FALSE}
 #generate xts
 yq      <- seq(from, to, by = "month") 
 oil     <- xts(oil, order.by = yq)
 l_yq    <- length(yq)
-View(oil)
 
-#plot series
-
-par(mfrow = c(1,1))
 plot(oil)
-
-
 
 #I(1)
 out     <- time_series_plot(ts(oil$Dprod))
-plot(oil$Dprod)
-plot(out[[2]])
-plot(out[[3]])
-View(out[[4]])
+#kable(out[[4]])
+```
 
+# Point 2
+
+```{r point2, echo= FALSE}
 #Point2
 #analysis ts
 timeseries     <-   diff(oil$rea)
 timeseries[1]  <-   0 
 timeseries     <-   xts(timeseries, order.by = yq)
-View(timeseries)
+#kable(timeseries)
 out     <-          time_series_plot(timeseries)
 plot(out[[1]])
 plot(out[[2]])
 plot(out[[3]])
-View(out[[4]])
+#kable(out[[4]])
 test <- out[[4]]
-test <- test[which.min(test[,4]), ]
+test <- test[which.min(test[, 4]), ]
 
 test
+```
 
+# Point 3
 
+```{r point3, echo = FALSE}
 best_arima <- bestarima(timeseries, 4)
-plot(arroots(arima(timeseries,order(best_arima))
+```
 
-#estimate var yt
-#========================================================
-# VAR model in level
-#========================================================
-
-type1   <- c("none", "const", "trend", "both")
+# Point 4
+```{r point4, echo = FALSE}
+# table with just R output
+# Test stationarity 
+adf.test(oil$Dprod)
+adf.test(oil$rea)
+adf.test(oil$rpo)
 # lag length
 out     <- VARselect(oil, lag.max = 24, type = "const")
 lag     <-  out$selection[1]
@@ -210,7 +293,6 @@ par(mfrow = c(3,1))
 pacf(res[ ,1])
 pacf(res[ ,2])
 pacf(res[ ,3])
-plot(arroots(var_model_lev$y))
 
 # Calculate summary statistics
 model_summary <- summary(var_model_lev)
@@ -218,16 +300,18 @@ model_summary <- summary(var_model_lev)
 # Obtain variance-covariance matrix
 model_summary$covres
 model_summary$corres
+
 roots(var_model_lev) #no stationary
 
 oir <- irf(var_model_lev, impulse = colnames(oil),
             response = colnames(oil), n.ahead = 25,
              ortho = TRUE, runs = 1000, seed = 12345
 )
+plot(oir)
+```
 
-##############################
-###         POINT 5        ###
-##############################
+# Point 5
+```{r point6, echo = FALSE}
 oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[1], n.ahead = 25,
              ortho = TRUE, runs = 1000, seed = 12345
@@ -243,19 +327,4 @@ oir <- irf(var_model_lev, impulse = colnames(oil)[3],
              ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
-#plot(ts(var_model_lev$y[, 1]))
-#lines(oil$Dprod, col = "red")
-# forecast of lev data
-var_pred    <- predict(var_model_lev, n.ahead = as.integer(fit_l))
-
-var_pred     <- xts(var_pred, order.by = yq[336:l_yq])
-
-#par(mai = rep(0.4, 4)); plot(var_pred)
-par(mai = rep(0.4, 4)); fanchart(var_pred)
-par(mai = rep(0.4, 4)); fanchart(var_pred)
-fcst     <- var_pred$fcst
-df_fcst_ddrop  <- data.frame(fcst$Dprod[,2:4]) 
-plot(df_fcst_ddrop$CI)
-t4 <- oil[335:l_yq,1]
-t4
-points(oil[335:l_yq,1])
+```
