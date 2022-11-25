@@ -54,13 +54,13 @@ adf_test <- function(timeseries) { # nolint
             rw[3] <- as.integer(rw[3])
             rw["ADF"] <- round(rw["ADF"], digits = 4)
             rw["p.value"] <- round(rw["p.value"], digits = 4)
-            if (rw["p.value"] > .05) {
+            if (rw["p.value"] <= .05) {
                 rw[6] <- "No Stat."
                 } else {
                 rw[6] <- "Stat"
                 }
 
-            if (rw["p.value"] > .01) {
+            if (rw["p.value"] <= .01) {
                 rw[7] <- "No Stat."
                 } else {
                 rw[7] <- "Stat"
@@ -290,7 +290,6 @@ to understat the correct specification for the ADF test.
 timeseries     <-   diff(oil$rea)
 timeseries     <-  timeseries[-1]
 timeseries     <-  xts(timeseries, order.by = yq[-1])
-plot(timeseries)
 
 out <- time_series_plot(timeseries, 1)
 
