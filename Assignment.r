@@ -44,23 +44,23 @@ adf_test <- function(timeseries) { # nolint
             rw[3] <- as.integer(rw[3])
             rw["ADF"] <- round(rw["ADF"], digits = 4)
             rw["p.value"] <- round(rw["p.value"], digits = 4)
-            if (rw["p.value"] > .05) {
+            if (rw["p.value"] < .05) {
                 rw[6] <- "No Stat."
                 } else {
                 rw[6] <- "Stat"
                 }
 
-            if (rw["p.value"] > .01) {
+            if (rw["p.value"] < .01) {
                 rw[7] <- "No Stat."
                 } else {
                 rw[7] <- "Stat"
                 }
             if (rw["Type"] == 1) {
-                rw["Type"] <- "no drift no trend"
+                rw["Type"] <- "no costant no trend"
             } else if (rw["Type"] == 2) {
-                rw["Type"] <- "with drift no trend"
+                rw["Type"] <- "with costant no trend"
             } else {
-                rw["Type"] <- "with drift and trend"
+                rw["Type"] <- "with costant and trend"
             }
             out <- rbind(out, rw)
            }
