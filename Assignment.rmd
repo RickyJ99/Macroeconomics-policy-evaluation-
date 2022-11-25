@@ -226,9 +226,11 @@ to      <- as.Date("2007-12-01")
 
 # Point 1
 
-The heading is denoted with the hashtag (#) and a space. Review the pandoc markdown 
-to see what's available knowing you can always write customized 
-HTML or LaTeX as needed.
+The time series below represents the monthly time series of:
+1. \% change in global crude oil production
+2. the real price of oil
+3. the real economy activity
+From 1973:1 to 2007:12.
 
 ```{r point1, echo=FALSE}
 #generate xts
@@ -236,30 +238,76 @@ yq      <- seq(from, to, by = "month")
 oil     <- xts(oil, order.by = yq)
 l_yq    <- length(yq)
 
-plot(oil)
-
+plot(oil, col = c("#0077ff", "#ff00a2", "#48ff00"))
+legend("top", legend = c("prod", "rea", "price"),
+       col = c("#0077ff", "#ff00a2", "#48ff00"),
+       lty = 1:1, cex = 1)
+title("Yield curve at 2020")
 #I(1)
-out     <- time_series_plot(ts(oil$Dprod))
+
+```
+As we can see the acf its clear signaling the presence of an autcorrelation process. 
+In order to test if the $rea$ is an $I(1)$, we will use an ADF test with lag =1. We will perform the test specifing four different type of the process:
+1. No consant, no trend
+2. Constant
+3. Constant with trend 
+4. No costant with trend
+First, we print the first times series graph.
+We perform the different type of the test with a maximun lag order of 12 and take the one which has the lower p-value:
+```{r reagrapgh, echo=FALSE}
+plot(oil$rea)
+acf(oil$rea)
+out <- time_series_plot(ts(oil$rea))
+kable(out[[4]])
+
+test <- out[[4]]
+test <- test[which.min(test[, 4]), ]
+test
+#I(1)
+#plot(rea_1)
+#out     <- time_series_plot(rea_1)
 #kable(out[[4]])
 ```
+As we can see from the table above which report the result of the ADF tests, it is clear that
+the process is not stationary with a $alpha<10%$, so there are no sufficent empirical evidence to reject the null.
+Thus the $rea$ time series is not a covariance-stationary process with a minium lag of order 1.
+
+
 
 # Point 2
+We take the first difference of the timeseries $rea$ and check if it is stationary with
+an adf test. Before that we print the time series of the first differences, the acf, and the pacf
+to understat the correct specification for the ADF test.
 
-```{r point2, echo= FALSE}
-#Point2
-#analysis ts
+```{r reagrapgh1, echo=FALSE}
+#first diff
+
 timeseries     <-   diff(oil$rea)
-timeseries[1]  <-   0 
-timeseries     <-   xts(timeseries, order.by = yq)
-#kable(timeseries)
-out     <-          time_series_plot(timeseries)
+timeseries[1]     <- 0
+timeseries     <-  xts(timeseries, order.by = yq)
+
+out <- time_series_plot(timeseries)
 plot(out[[1]])
 plot(out[[2]])
 plot(out[[3]])
+kable(out[[4]])
+
+```
+The above graphs clearly underline stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
+is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
+From the plot of the time series we can see a mean reverting process, and so I will opt for the specification without time trend and constant.
+so the test will have the following specification:
+$$ \delta rea_t = \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+The test will be performed with all passible four specification, and will be selected the specification
+with lower adf value.
+```{r point2, echo= FALSE}
+
+#Point2
+#analysis ts
+
 #kable(out[[4]])
 test <- out[[4]]
 test <- test[which.min(test[, 4]), ]
-
 test
 ```
 
@@ -267,6 +315,7 @@ test
 
 ```{r point3, echo = FALSE}
 best_arima <- bestarima(timeseries, 4)
+best_arima
 ```
 
 # Point 4
@@ -284,15 +333,15 @@ lag
 # estimation
 var_model_lev <- VAR(oil, p = lag, type = "const")
 res           <- residuals(var_model_lev)
-par(mfrow = c(3,1))
-acf(res[ ,1])
-acf(res[ ,2])
-acf(res[ ,3])
+par(mfrow = c(3, 1))
+acf(res[, 1])
+acf(res[, 2])
+acf(res[, 3])
 
-par(mfrow = c(3,1))
-pacf(res[ ,1])
-pacf(res[ ,2])
-pacf(res[ ,3])
+par(mfrow = c(3, 1))
+pacf(res[, 1])
+pacf(res[, 2])
+pacf(res[, 3])
 
 # Calculate summary statistics
 model_summary <- summary(var_model_lev)
