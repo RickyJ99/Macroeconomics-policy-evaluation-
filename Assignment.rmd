@@ -15,7 +15,7 @@ library(forecast)
 library(vars)
 library(ggplot2)
 library(knitr)
-#library(erer)
+library(erer)
 
 #function
 adf_test <- function(timeseries) { # nolint
@@ -81,14 +81,19 @@ adf_test <- function(timeseries) { # nolint
 return(out)
 
 }
-time_series_plot <- function(timeseries, type) {
+time_series_plot <- function(timeseries) {
     out1 <- plot(timeseries)
     out2 <- acf(timeseries)
     out3 <- pacf(timeseries)
     #Stationarity
-    out4 <- adf_test(timeseries)
-    out5 <- ADF_IC(ts(timeseries), adflag = 12, mflag = type, IC = 2)
-    out <- list(out1, out2, out3, out4, out5)
+    out4 <- ur.df2(timeseries, type = "drift",
+    lags = 12, selectlags = "BIC", digit = 2)
+    out5 <- ur.df2(timeseries, type = "trend",
+    lags = 12, selectlags = "BIC", digit = 2)
+    out6 <- ur.df2(timeseries, type = "none",
+    lags = 12, selectlags = "BIC", digit = 2)
+
+    out <- list(out1, out2, out3, out4, out5, out6)
     return(out)
 }
 bic_score <- function(k, n, l) {
@@ -260,18 +265,18 @@ We perform the different type of the test with a maximun lag order of 12:
 $$  rea_t = \alpha + \sigma_1  reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
 We take the model with constant, otherwise the model will be too restricive, and without time trend, selectin the one which as lower BIC:
 ```{r reagrapgh, echo=FALSE}
-plot(oil$rea)
-acf(oil$rea)
-out <- time_series_plot(ts(oil$rea), 1)
-kable(out[[4]])
+timeseries <- ts(oil$rea)
+out <- time_series_plot(timeseries)
+
+print("Without constant and without time trend")
+out[[6]]
+print("With constant and without time trend")
+out[[4]]
+print("With constant and with time trend")
 out[[5]]
-test <- out[[4]]
-test <- test[which.min(test[, 4]), ]
-test
-#I(1)
-#plot(rea_1)
-#out     <- time_series_plot(rea_1)
-#kable(out[[4]])
+
+
+
 ```
 As we can see from the table above which report the result of the ADF tests, it is clear that
 the process is not stationary with a $alpha<10%$, so there are no sufficent empirical evidence to reject the null.
@@ -291,7 +296,7 @@ timeseries     <-   diff(oil$rea)
 timeseries     <-  timeseries[-1]
 timeseries     <-  xts(timeseries, order.by = yq[-1])
 
-out <- time_series_plot(timeseries, 1)
+out <- time_series_plot(timeseries)
 
 plot(out[[1]])
 plot(out[[2]])
@@ -301,9 +306,10 @@ plot(out[[3]])
 ```
 The above graphs clearly underline stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
 is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
-From the plot of the time series we can see a mean reverting process, and so I will opt for the specification without time trend and constant.
-so the test will have the following specification:
-$$ \delta rea_t = \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant, becouse it is less restricitve.
+so the test will have the following specifications:
+$$ \delta rea_t = \alpha + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+$$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
 The test will be performed with all passible four specification, and will be selected the specification
 with lower adf value.
 ```{r point2, echo= FALSE}
@@ -311,10 +317,11 @@ with lower adf value.
 #Point2
 #analysis ts
 
-kable(out[[4]])
-test <- out[[4]]
-test <- test[which.min(test[, 4]), ]
-test
+print("Without constant and without time trend")
+out[[6]]
+print("With constant and without time trend")
+out[[4]]
+print("With constant and with time trend")
 out[[5]]
 ```
 
