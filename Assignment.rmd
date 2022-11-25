@@ -253,13 +253,15 @@ In order to test if the $rea$ is an $I(1)$, we will use an ADF test with lag =1.
 3. Constant with trend 
 4. No costant with trend
 First, we print the first times series graph.
-We perform the different type of the test with a maximun lag order of 12 and take the one which has the lower p-value:
+We perform the different type of the test with a maximun lag order of 12: 
+$$  rea_t = \alpha + \sigma_1  reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+We take the model with constant, otherwise the model will be too restricive, and without time trend, selectin the one which as lower BIC:
 ```{r reagrapgh, echo=FALSE}
 plot(oil$rea)
 acf(oil$rea)
 out <- time_series_plot(ts(oil$rea))
 kable(out[[4]])
-
+out[[5]]
 test <- out[[4]]
 test <- test[which.min(test[, 4]), ]
 test
@@ -283,14 +285,14 @@ to understat the correct specification for the ADF test.
 #first diff
 
 timeseries     <-   diff(oil$rea)
-timeseries[1]     <- 0
-timeseries     <-  xts(timeseries, order.by = yq)
-
+timeseries     <-  timeseries[-1]
+timeseries     <-  xts(timeseries, order.by = yq[-1])
+plot(timeseries)
 out <- time_series_plot(timeseries)
 plot(out[[1]])
 plot(out[[2]])
 plot(out[[3]])
-kable(out[[4]])
+
 
 ```
 The above graphs clearly underline stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
