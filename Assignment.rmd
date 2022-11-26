@@ -255,10 +255,9 @@ title("Yield curve at 2020")
 
 ```
 As we can see the acf its clear signaling the presence of an autcorrelation process. 
-In order to test if the $rea$ is an $I(1)$, we will use an ADF test with lag =1. We will perform the test specifing four different type of the process:
+In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minimun lag =1. We will perform the test specifing four different type of the process:
 1. No consant, no trend
 2. Constant
-3. Constant with trend 
 4. No costant with trend
 First, we print the first times series graph.
 We perform the different type of the test with a maximun lag order of 12: 
