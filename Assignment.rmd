@@ -3,6 +3,7 @@ title: "Assignement"
 output: pdf_document
 ---
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = FALSE)
 
 library(xts)
@@ -151,7 +152,7 @@ bestarima <- function(timeseries, maxlag) {
     q <- model1[which.min(model1[, "BIC"]), "q"]
     out <- arima(timeseries, order = c(p, 0, q))
     acf(out$residuals)
-   return(c(p, q))
+   return(c(p, 0, q))
 }
 
 arroots <- function(object){
@@ -243,6 +244,7 @@ From 1973:1 to 2007:12.
 ```{r point1, echo=FALSE}
 #generate xts
 yq      <- seq(from, to, by = "month") 
+
 oil     <- xts(oil, order.by = yq)
 l_yq    <- length(yq)
 
@@ -258,11 +260,12 @@ As we can see the acf its clear signaling the presence of an autcorrelation proc
 In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minimun lag =1. We will perform the test specifing four different type of the process:
 1. No consant, no trend
 2. Constant
-4. No costant with trend
+4. Costant with trend
 First, we print the first times series graph.
 We perform the different type of the test with a maximun lag order of 12: 
 $$  rea_t = \alpha + \sigma_1  reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
-We take the model with constant, otherwise the model will be too restricive, and without time trend, selectin the one which as lower BIC:
+The criteria for selection of the lag order is the one which has lower BIC:
+
 ```{r reagrapgh, echo=FALSE}
 timeseries <- ts(oil$rea)
 out <- time_series_plot(timeseries)
@@ -277,16 +280,17 @@ out[[5]]
 
 
 ```
-As we can see from the table above which report the result of the ADF tests, it is clear that
-the process is not stationary with a $alpha<10%$, so there are no sufficent empirical evidence to reject the null.
+
+The results of the ADF tests show the process is not stationary with a $alpha<10%$, so there are no sufficent empirical evidence to reject the null.
 Thus the $rea$ time series is not a covariance-stationary process with a minium lag of order 1.
 
 
 
 # Point 2
+
 We take the first difference of the timeseries $rea$ and check if it is stationary with
 an adf test. Before that we print the time series of the first differences, the acf, and the pacf
-to understat the correct specification for the ADF test.
+to understand the correct specification for the ADF test.
 
 ```{r reagrapgh1, echo=FALSE}
 #first diff
@@ -303,14 +307,18 @@ plot(out[[3]])
 
 
 ```
-The above graphs clearly underline stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
+
+The above graphs clearly underline the stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
 is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
-From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant, becouse it is less restricitve.
-so the test will have the following specifications:
+From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant and time trend, becouse it is less restricitve.
+So the test will have the following specifications:
+$$ \delta rea_t = \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
 $$ \delta rea_t = \alpha + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
 $$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+
 The test will be performed with all passible four specification, and will be selected the specification
 with lower adf value.
+
 ```{r point2, echo= FALSE}
 
 #Point2
@@ -324,14 +332,30 @@ print("With constant and with time trend")
 out[[5]]
 ```
 
+The test above shows the stationarity of the process  with an $\alpha>=1%$, (indipendetemente dalla specificazione) 
+Thus, the order of integration of the $rea$ is the second one, because the series is an $I(1)$.
+
 # Point 3
 
-```{r point3, echo = FALSE}
+We select the best arma model setting the iper-paramenters (p,q), using the BIC criteria:
+
+```{r point3, echo = FALSE, include = TRUE}
 best_arima <- bestarima(timeseries, 4)
 best_arima
+arma <- arima(timeseries, order = best_arima, method = "ML")
+summary(arma)
+plot(acf(arma$residuals))
+
 ```
 
+The autcorrelation function of the residuals it is not statistically different from 0, it looks like white noise. So the 
+arma model adopted is one the fit perfectly the time series:
+$$ y_t = \theta_1 y_{t-1} + \theta_2 y_{t-2} + \theta_3 y_{t-3} + \beta_1 \epsilon_{t-1} + \beta_2 \epsilon_{t-2} + \epsilon_{t}$$
+The issue regarding this model is an overfitting one, since all the point in the timeseries has been used to fit the model, as opposite to 
+the usual practice. But the aim of this model is not to provide a prediction for the series, but instead the understading of the process in the specific time span of the series.
+
 # Point 4
+
 ```{r point4, echo = FALSE}
 # table with just R output
 # Test stationarity 
@@ -373,6 +397,7 @@ plot(oir)
 ```
 
 # Point 5
+
 ```{r point6, echo = FALSE}
 oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[1], n.ahead = 25,
