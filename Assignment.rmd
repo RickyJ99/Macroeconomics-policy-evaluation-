@@ -263,7 +263,7 @@ In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minim
 4. Costant with trend
 First, we print the first times series graph.
 We perform the different type of the test with a maximun lag order of 12: 
-$$  rea_t = \alpha + \sigma_1  reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+$$  rea_t = \alpha + \sigma_1  reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
 The criteria for selection of the lag order is the one which has lower BIC:
 
 ```{r reagrapgh, echo=FALSE}
@@ -312,9 +312,9 @@ The above graphs clearly underline the stationarity of the process, indeed the a
 is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
 From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant and time trend, becouse it is less restricitve.
 So the test will have the following specifications:
-$$ \delta rea_t = \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
-$$ \delta rea_t = \alpha + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
-$$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_(t-1) + ... + \sigma_12 \delta reat_(t-13)$$
+$$ \delta rea_t = \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
+$$ \delta rea_t = \alpha + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
+$$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}  $$
 
 The test will be performed with all passible four specification, and will be selected the specification
 with lower adf value.
