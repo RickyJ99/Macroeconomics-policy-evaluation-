@@ -97,63 +97,6 @@ time_series_plot <- function(timeseries) {
     out <- list(out1, out2, out3, out4, out5, out6, out7)
     return(out)
 }
-bic_score <- function(k, n, l) {
-    x <-  2 * k * log(n) - 2 * l
-    return(x)
-}
-
-#best arima select with BIC
-bestarima <- function(timeseries, maxlag) {
-    plag    <- 1:maxlag
-    qlag    <- 1:maxlag
-
-    model1   <- matrix(NA, nrow = 0, ncol = 3)
-    colnames(model1) <- c("p", "q", "BIC")
-    for (p in plag) {
-       for (q in qlag) {
-        out <- tryCatch(
-        {
-            # Just to highlight: if you want to use more than one 
-            # R expression in the "try" part then you'll have to 
-            # use curly brackets.
-            # 'tryCatch()' will return the last evaluated expression 
-            # in case the "try" part was completed successfully
-
-            arima(timeseries, order = c(p, 0, q))
-            # The return value of `readLines()` is the actual value 
-            # that will be returned in case there is no condition 
-            # (e.g. warning or error). 
-            # You don't need to state the return value via `return()` as code 
-            # in the "try" part is not wrapped inside a function (unlike that
-            # for the condition handlers for warnings and error below)
-        },
-        error=function(cond) {
-            # Choose a return value in case of error
-            return(NA)
-        },
-        warning=function(cond) {
-            # Choose a return value in case of warning
-            return(NA)
-        }
-    )    
-    if(any(!is.na(out))){
-        x <- arima(timeseries, order = c(p, 0, q))
-        x_bic <- bic_score(length(x$coef), x$nobs, x$loglik)
-        
-
-        
-       } else {
-          x_bic <- 9999
-       }
-       model1 <- rbind(model1, c(p, q, x_bic))
-    }
-    }
-    p <- model1[which.min(model1[, "BIC"]), "p"]
-    q <- model1[which.min(model1[, "BIC"]), "q"]
-    out <- arima(timeseries, order = c(p, 0, q))
-    acf(out$residuals)
-   return(c(p, 0, q))
-}
 
 arroots <- function(object){
   if(!("Arima" %in% class(object)) &
@@ -220,7 +163,7 @@ plot.armaroots <- function(x, xlab="Real", ylab="Imaginary",
   }
 }
 
-#import dataser
+#import dataset
 
 oil     <- read.csv(file = "oil_data_1.csv")
 
@@ -235,11 +178,11 @@ to      <- as.Date("2007-12-01")
 
 # Point 1
 
-The time series below represents the monthly time series of:
+The plot below represents three monthly time series, in the order:
 \begin{enumerate}
-  \item $ \% $ change in global crude oil production
-  \item the real price of oil
-  \item the real economy activity
+  \item $\Delta\,prod:\;\; \% $ change in global crude oil production
+  \item $rpo_{t}$: the real price of oil
+  \item $rea_{t}:$ index of the real economic activity
 \end{enumerate}
 from 1973:1 to 2007:12.
 
@@ -258,22 +201,24 @@ title("Yield curve at 2020")
 #I(1)
 
 ```
-As we can see from acf its clear signaling the presence of an autocorrelation process. 
+From the acf we can clearly see the presence of an autocorrelation process. 
 From the partial autocorrelation function we can infer that it's probably first-order autocorrelation
 since the only significant column is the first one (also the second one, but it has a negative sign).
 
 \newpage
 
-In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minimun lag =1. We will perform the test specifing four different type of the process:
+In order to test if the $rea_{t}$ is an $I(1)$, we will use an ADF test with a minimun lag = 1. We will perform the test using four different specifications of the process:
 \begin{enumerate}
   \item No constant, no trend
   \item Constant
   \item Constant with trend
 \end{enumerate}
-First, we print the first time series graph.
-We perform the different types of the test with a maximum lag order of 12: 
-$$  rea_t = \alpha + \sigma_1  reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-The criteria for selection of the lag order is the one which has lower BIC:
+
+
+First, we print the $rea_{t}$ time series graph.
+Then, we perform the different types of the test with a maximum lag order of 12: 
+$$  rea_t = \alpha + \delta_1  rea_{t-1} + ... + \delta_12 rea_{t-12}$$
+The criteria for selection of the lag order is selecting the one which has lower BIC:
 
 ```{r reagrapgh, echo=FALSE}
 timeseries <- ts(oil$rea)
@@ -307,17 +252,18 @@ print(paste("BIC:", ad$bic))
 
 The results of the ADF tests shows that the process is stationary with the simplest specification (without constant
 and time trend), up to the third significance level (over 1$\%$). However, the other possible specification, which add a constant and then also a time trend
-present higher p-values, thus the specification we are going to select is the first one.
+present higher p-values (also, it's got the lowest BIC), thus the specification we are going to select is the first one.
+This proves that the process is $I(1)$, since the first specification includes only one lag (without any constant and time trend).
 This is consistent with what we should expect, since $rea_{t}$ is computed as a percentage deviation from the mean (it's basically an indicator of the business cycle).
 
 Thus, the specification we select in the end is:
-$$ \delta rea_t =  \delta_1 \Delta reat_{t-1} + ... +  \delta_12 \Delta reat_{t-13}$$
+$$ \delta rea_t =  \delta_1 rea_{t-1} + ... +  \delta_12 rea_{t-12}$$
 
 
 # Point 2
 
-We take the first difference of the timeseries $rea$ and check if it is stationary with
-an adf test. Before that we print the time series of the first differences, the acf, and the pacf
+We take the first difference of the time series $rea$ and check if it is stationary with
+an adf test. Before that we print the time series of the first differences, its acf and pacf
 to understand the correct specification for the ADF test.
 
 ```{r reagrapgh1, echo=FALSE}
@@ -329,23 +275,24 @@ timeseries     <-  xts(timeseries, order.by = yq[-1])
 
 out <- time_series_plot(timeseries)
 
+plot(out[[3]])
 plot(out[[1]])
 plot(out[[2]])
-plot(out[[3]])
 
 
 ```
 
-The above graphs clearly underline the stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
-is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
-From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant and time trend, becouse it is less restricitve.
+The graphs above indicate the stationarity of the process. 
+Indeed the acf, when the $lag>2$ shows an autcorrelation
+that is not statisticaly different from 0 (except for a few peaks). As for the partial autocorrelation, it is statistically different only for some lags>10 (except, of course, for lag = 1).
+From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications without constant and time trend, because it is less restrictive.
 So the test will have the following specifications:
-$$ \delta rea_t = \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-$$ \delta rea_t = \alpha + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-$$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}  $$
+$$ \Delta rea_t = \delta_1 \Delta reat_{t-1} + ... + \delta_12 \Delta reat_{t-12}$$
+$$ \Delta rea_t = \alpha + \delta_1 \Delta reat_{t-1} + ... + \delta_12 \Delta reat_{t-12}$$
+$$ \Delta rea_t = \alpha + \beta * t + \delta_1 \Delta reat_{t-1} + ... + \delta_12 \Delta reat_{t-12}  $$
 
-The test will be performed with all passible four specification, and will be selected the specification
-with lower adf value.
+The test will be performed with all possible three specification, and the specification
+with lower adf will be selected.
 
 ```{r point2, echo= FALSE}
 
@@ -373,14 +320,81 @@ print(paste("Lag used:", ad$lag.used ))
 print(paste("BIC:", ad$bic))
 ```
 
-The test above shows the stationarity of the process  with an $\alpha>=1%$, (indipendetemente dalla specificazione) 
-Thus, the order of integration of the $rea$ is the second one, because the series is an $I(1)$.
+The test above shows another time the stationarity of the process, since with all specifications we reject the null
+hypothesis of non-stationarity up and beyond the 1\% significance level. 
+Furthermore, we select the simplest specification yet another time, since even if more complex specifications yield
+lower values of the p-value, the BIC increases, and with the first specification we already have a p-value that is asyntotically equal to zero.
+Regarding the order of integration, we can say that the 
 
 # Point 3
 
-We select the best arma model setting the iper-paramenters (p,q), using the BIC criteria:
+We select the best arma model setting the hyper-paramenters (p,q), using the BIC criteria, through the "best_arima" and the "bic_score" functions
+reported below
 
-```{r point3, echo = FALSE, include = TRUE}
+```{r point3, echo = TRUE, include = TRUE}
+
+# Function calculating the BIC score
+
+bic_score <- function(k, n, l) {
+    x <-  2 * k * log(n) - 2 * l
+    return(x)
+}
+
+# Best arima model selected with the BIC criterion
+bestarima <- function(timeseries, maxlag) {
+    plag    <- 1:maxlag
+    qlag    <- 1:maxlag
+
+    model1   <- matrix(NA, nrow = 0, ncol = 3)
+    colnames(model1) <- c("p", "q", "BIC")
+    for (p in plag) {
+       for (q in qlag) {
+        out <- tryCatch(
+        {
+            # Just to highlight: if you want to use more than one 
+            # R expression in the "try" part then you'll have to 
+            # use curly brackets.
+            # 'tryCatch()' will return the last evaluated expression 
+            # in case the "try" part was completed successfully
+
+            arima(timeseries, order = c(p, 0, q))
+            # The return value of `readLines()` is the actual value 
+            # that will be returned in case there is no condition 
+            # (e.g. warning or error). 
+            # You don't need to state the return value via `return()` as code 
+            # in the "try" part is not wrapped inside a function (unlike that
+            # for the condition handlers for warnings and error below)
+        },
+        error=function(cond) {
+            # Choose a return value in case of error
+            return(NA)
+        },
+        warning=function(cond) {
+            # Choose a return value in case of warning
+            return(NA)
+        }
+    )    
+    if(any(!is.na(out))){
+        x <- arima(timeseries, order = c(p, 0, q))
+        x_bic <- bic_score(length(x$coef), x$nobs, x$loglik)
+        
+
+        
+       } else {
+          x_bic <- 9999
+       }
+       model1 <- rbind(model1, c(p, q, x_bic))
+    }
+    }
+    p <- model1[which.min(model1[, "BIC"]), "p"]
+    q <- model1[which.min(model1[, "BIC"]), "q"]
+    out <- arima(timeseries, order = c(p, 0, q))
+    acf(out$residuals)
+   return(c(p, 0, q))
+}
+```
+
+```{r pointz, echo=FALSE, include=TRUE}
 best_arima <- bestarima(timeseries, 4)
 
 arma <- arima(timeseries, order = best_arima, method = "ML")
@@ -392,11 +406,15 @@ plot(pacf(arma$residuals))
 
 ```
 
-The autcorrelation function of the residuals it is not statistically different from 0, it looks like white noise. So the 
-arma model adopted is one the fit perfectly the time series:
+The autocorrelation function of the residuals is not statistically different from 0, and it looks like white noise.
+The arma model adopted is one the fits the time series in the best possible way, so:
 $$ y_t = \theta_1 y_{t-1} + \theta_2 y_{t-2} + \theta_3 y_{t-3} + \beta_1 \epsilon_{t-1} + \beta_2 \epsilon_{t-2} + \epsilon_{t}$$
 The issue regarding this model is an overfitting one, since all the point in the timeseries has been used to fit the model, as opposite to 
-the usual practice. But the aim of this model is not to provide a prediction for the series, but instead the understading of the process in the specific time span of the series.
+the usual practice. But the aim of this model is not to provide a prediction for the series, but instead the understading of the process in
+the specific time span of the series.
+
+We can also see from the inverse root plots of the AR and MA that the process is stationary (all the inverse roots lie
+within the unit circle).
 
 # Point 4
 
@@ -413,12 +431,12 @@ adf.test(oil$rpo)
 # estimation
 var_model_lev <- VAR(oil, lag = 3, type = "const", ic= "HQ")
 res           <- residuals(var_model_lev)
-par(mfrow = c(3, 1))
+par(mfrow = c(1, 1))
 acf(res[, 1])
 acf(res[, 2])
 acf(res[, 3])
 
-par(mfrow = c(3, 1))
+par(mfrow = c(1, 1))
 pacf(res[, 1])
 pacf(res[, 2])
 pacf(res[, 3])
@@ -443,32 +461,63 @@ abline(h=0)
 abline(v=0)
 points(root.comp, root.real, pch=19)
 legend(-1.5, -1.5, legend= "Eigenvalues", pch=19)
+```
+
+
+## Point 5
+
+We report below the mapping from the text of the assignment:
+
+$$ \left[\begin{matrix}
+e_{t}^{\Delta\prod}  \\
+e_{t}^{rea}  \\
+e_{t}^{rpo} 
+\end{matrix}\right]
+=
+\left[\begin{matrix}
+c_{11} & c_{12} & c_{13} \\
+c_{21} & c_{22} & c_{32} \\
+c_{31} & c_{32} & c_{33} 
+\end{matrix}\right]  
+\left[\begin{matrix}
+u_{t}^{oil\;supply\;shock}  \\
+u_{t}^{agg\;demand\;shock}  \\
+u_{t}^{oil\;specific\;demand\;shock} 
+\end{matrix}\right]
+$$
+
+Based on the assumptions made in the text, we set $c_{12}$, $c_{13}$, and $c_{23}$ equal to zero. This is consistent
+with the fact that we need to have a lower triangular matrix $C$, since in a Cholesky decomposition we need this 
+restriction in order to get a unique solution.
+
+
+# Point 6
+
+```{r point6, echo = FALSE}
+# oir <- irf(var_model_lev, impulse = colnames(oil),
+#              response = colnames(oil), n.ahead = 25,
+#               ortho = TRUE, runs = 1000, seed = 12345
+# )
+# plot(oir)
+
 
 
 
 oir <- irf(var_model_lev, impulse = colnames(oil),
-            response = colnames(oil), n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
-)
-plot(oir)
-```
-
-# Point 5
-
-```{r point6, echo = FALSE}
-oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[1], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
+             ortho = TRUE, runs = 2500, seed = 12345
 )
 plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil)[2],
+oir <- irf(var_model_lev, impulse = colnames(oil),
             response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
+             ortho = TRUE, runs = 2500, seed = 12345
 )
 plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil)[3],
+oir <- irf(var_model_lev, impulse = colnames(oil),
             response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
+             ortho = TRUE, runs = 2500, seed = 12345
 )
 plot(oir)
 ```
+
+
