@@ -1,10 +1,4 @@
----
-title: "Assignement"
-output: pdf_document
----
-```{r setup, include=FALSE}
-
-knitr::opts_chunk$set(echo = FALSE)
+setwd("C:\Users\feder\OneDrive\Desktop\InflationGrowth\assignment")
 
 library(xts)
 library(zoo)
@@ -29,7 +23,7 @@ adf_test <- function(timeseries) { # nolint
     colnames(out) <- out_colnames
 
     for (count in 1:12) {
-        i   <-  adf.test(timeseries, nlag = count, output = FALSE)
+        i   <<-  adf.test(timeseries, nlag = count, output = FALSE)
         #i   <-  ur.df2( timeseries, type ="none", lags = 12, 
         #                selectlags = "BIC", digit = 2)
 
@@ -222,7 +216,7 @@ plot.armaroots <- function(x, xlab="Real", ylab="Imaginary",
 
 #import dataser
 
-oil     <- read.csv(file = "oil_data_1.csv")
+oil     <- read.csv("oil_data_1.csv")
 
 #convert to xts
 from    <- as.Date("1973-02-01")
@@ -231,19 +225,11 @@ to      <- as.Date("2007-12-01")
 
 
 
-```
 
 # Point 1
 
-The time series below represents the monthly time series of:
-\begin{enumerate}
-  \item $ \% $ change in global crude oil production
-  \item the real price of oil
-  \item the real economy activity
-\end{enumerate}
-from 1973:1 to 2007:12.
 
-```{r point1, echo=FALSE}
+
 #generate xts
 yq      <- seq(from, to, by = "month") 
 
@@ -257,25 +243,7 @@ legend("top", legend = c("prod", "rea", "price"),
 title("Yield curve at 2020")
 #I(1)
 
-```
-As we can see from acf its clear signaling the presence of an autocorrelation process. 
-From the partial autocorrelation function we can infer that it's probably first-order autocorrelation
-since the only significant column is the first one (also the second one, but it has a negative sign).
 
-\newpage
-
-In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minimun lag =1. We will perform the test specifing four different type of the process:
-\begin{enumerate}
-  \item No constant, no trend
-  \item Constant
-  \item Constant with trend
-\end{enumerate}
-First, we print the first time series graph.
-We perform the different types of the test with a maximum lag order of 12: 
-$$  rea_t = \alpha + \sigma_1  reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-The criteria for selection of the lag order is the one which has lower BIC:
-
-```{r reagrapgh, echo=FALSE}
 timeseries <- ts(oil$rea)
 out <- time_series_plot(timeseries)
 
@@ -292,24 +260,10 @@ print(out[[5]])
 #plot(out[[5]])
 
 
-```
-
-The results of the ADF tests shows that the process is stationary with the simplest specification (without constant
-and time trend), up to the third significance level (over 1$\%$). However, the other possible specification, which add a constant and then also a time trend
-present higher p-values, thus the specification we are going to select is the first one.
-This is consistent with what we should expect, since $rea_{t}$ is computed as a percentage deviation from the mean (it's basically an indicator of the business cycle).
-
-Thus, the specification we select in the end is:
-$$ \delta rea_t = \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
 
 
-# Point 2
 
-We take the first difference of the timeseries $rea$ and check if it is stationary with
-an adf test. Before that we print the time series of the first differences, the acf, and the pacf
-to understand the correct specification for the ADF test.
 
-```{r reagrapgh1, echo=FALSE}
 #first diff
 
 timeseries     <-   diff(oil$rea)
@@ -323,21 +277,6 @@ plot(out[[2]])
 plot(out[[3]])
 
 
-```
-
-The above graphs clearly underline the stationarity of the process, indeed the acf for the $lag>2$ the partial autcorrelation
-is not statisticaly different from 0. As for the partial autcorrelation that is statistically different only for some lag>10.
-From the plot of the time series we can see a mean reverting process, and so I will opt for the specifications with constant and time trend, becouse it is less restricitve.
-So the test will have the following specifications:
-$$ \delta rea_t = \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-$$ \delta rea_t = \alpha + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
-$$ \delta rea_t = \alpha + \beta * t + \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}  $$
-
-The test will be performed with all passible four specification, and will be selected the specification
-with lower adf value.
-
-```{r point2, echo= FALSE}
-
 #Point2
 #analysis ts
 
@@ -347,88 +286,5 @@ print("With constant and without time trend")
 out[[4]]
 print("With constant and with time trend")
 out[[5]]
-```
 
-The test above shows the stationarity of the process  with an $\alpha>=1%$, (indipendetemente dalla specificazione) 
-Thus, the order of integration of the $rea$ is the second one, because the series is an $I(1)$.
 
-# Point 3
-
-We select the best arma model setting the iper-paramenters (p,q), using the BIC criteria:
-
-```{r point3, echo = FALSE, include = TRUE}
-# best_arima <- bestarima(timeseries, 4)
-# best_arima
-# arma <- arima(timeseries, order = best_arima, method = "ML")
-# summary(arma)
-# plot(acf(arma$residuals))
-
-```
-
-The autcorrelation function of the residuals it is not statistically different from 0, it looks like white noise. So the 
-arma model adopted is one the fit perfectly the time series:
-$$ y_t = \theta_1 y_{t-1} + \theta_2 y_{t-2} + \theta_3 y_{t-3} + \beta_1 \epsilon_{t-1} + \beta_2 \epsilon_{t-2} + \epsilon_{t}$$
-The issue regarding this model is an overfitting one, since all the point in the timeseries has been used to fit the model, as opposite to 
-the usual practice. But the aim of this model is not to provide a prediction for the series, but instead the understading of the process in the specific time span of the series.
-
-# Point 4
-
-```{r point4, echo = FALSE}
-# table with just R output
-# Test stationarity 
-adf.test(oil$Dprod)
-adf.test(oil$rea)
-adf.test(oil$rpo)
-# lag length
-out     <- VARselect(oil, lag.max = 24, type = "const")
-lag     <-  out$selection[1]
-lag
-
-# estimation
-var_model_lev <- VAR(oil, p = lag, type = "const")
-res           <- residuals(var_model_lev)
-par(mfrow = c(3, 1))
-acf(res[, 1])
-acf(res[, 2])
-acf(res[, 3])
-
-par(mfrow = c(3, 1))
-pacf(res[, 1])
-pacf(res[, 2])
-pacf(res[, 3])
-
-# Calculate summary statistics
-model_summary <- summary(var_model_lev)
-
-# Obtain variance-covariance matrix
-model_summary$covres
-model_summary$corres
-
-roots(var_model_lev) #no stationary
-
-oir <- irf(var_model_lev, impulse = colnames(oil),
-            response = colnames(oil), n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
-)
-plot(oir)
-```
-
-# Point 5
-
-```{r point6, echo = FALSE}
-oir <- irf(var_model_lev, impulse = colnames(oil)[1],
-            response = colnames(oil)[1], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
-)
-plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil)[2],
-            response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
-)
-plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil)[3],
-            response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
-)
-plot(oir)
-```
