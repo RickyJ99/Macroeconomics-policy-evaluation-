@@ -236,10 +236,12 @@ to      <- as.Date("2007-12-01")
 # Point 1
 
 The time series below represents the monthly time series of:
-1. \% change in global crude oil production
-2. the real price of oil
-3. the real economy activity
-From 1973:1 to 2007:12.
+\begin{enumerate}
+  \item $ \% $ change in global crude oil production
+  \item the real price of oil
+  \item the real economy activity
+\end{enumerate}
+from 1973:1 to 2007:12.
 
 ```{r point1, echo=FALSE}
 #generate xts
@@ -256,13 +258,18 @@ title("Yield curve at 2020")
 #I(1)
 
 ```
-As we can see the acf its clear signaling the presence of an autcorrelation process. 
+As we can see from acf its clear signaling the presence of an autcorrelation process. 
+
+\newpage
+
 In order to test if the $rea$ is an $I(1)$, we will use an ADF test with a minimun lag =1. We will perform the test specifing four different type of the process:
-1. No consant, no trend
-2. Constant
-4. Costant with trend
-First, we print the first times series graph.
-We perform the different type of the test with a maximun lag order of 12: 
+\begin{enumerate}
+  \item No consant, no trend
+  \item Constant
+  \item Constant with trend
+\end{enumerate}
+First, we print the first time series graph.
+We perform the different types of the test with a maximum lag order of 12: 
 $$  rea_t = \alpha + \sigma_1  reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
 The criteria for selection of the lag order is the one which has lower BIC:
 
