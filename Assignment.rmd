@@ -1,5 +1,5 @@
 ---
-title: "Assignement"
+title: "Assignment"
 output: pdf_document
 ---
 ```{r setup, include=FALSE}
@@ -411,7 +411,7 @@ adf.test(oil$rpo)
 #bic_score(length(arma$coef), arma$nobs, arma$loglik))
 
 # estimation
-var_model_lev <- VAR(oil, lag = 3, type = "const", ic= "AIC")
+var_model_lev <- VAR(oil, lag = 3, type = "const", ic= "HQ")
 res           <- residuals(var_model_lev)
 par(mfrow = c(3, 1))
 acf(res[, 1])
@@ -430,7 +430,21 @@ model_summary
 model_summary$covres
 model_summary$corres
 
-invroots <- roots(var_model_lev)  #no stationary
+invroots <- roots(var_model_lev, modulus=FALSE)  #no stationary
+
+par(mfrow=c(1,1))
+root.comp <- Im(invroots)
+root.real <- Re(invroots)
+x <- seq(-1, 1, length=1000)
+y1 <- sqrt(1-x^2)
+y2 <- -sqrt(1-x^2)
+plot(c(x, x), c(y1, y2), xlab='Real part', ylab='Imaginary part', type='l', main='Unit Circle', ylim=c(−2, 2), xlim=c (-2, 2))
+abline(h=0)
+abline(v=0)
+points(root.comp, root.real, pch=19)
+legend(-1.5, -1.5, legend= "Eigenvalues", pch=19)
+
+
 
 oir <- irf(var_model_lev, impulse = colnames(oil),
             response = colnames(oil), n.ahead = 25,
