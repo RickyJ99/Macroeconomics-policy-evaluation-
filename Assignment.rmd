@@ -5,7 +5,7 @@ output: pdf_document
 ```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(echo = FALSE)
-
+options(digits=5)
 library(xts)
 library(zoo)
 library(MultipleBubbles)
@@ -98,7 +98,7 @@ time_series_plot <- function(timeseries) {
     return(out)
 }
 bic_score <- function(k, n, l) {
-    x <- k * log(n) - 2 * l
+    x <-  2 * k * log(n) - 2 * l
     return(x)
 }
 
@@ -279,16 +279,27 @@ The criteria for selection of the lag order is the one which has lower BIC:
 timeseries <- ts(oil$rea)
 out <- time_series_plot(timeseries)
 
-kable(out[[7]])
+
 
 print("Without constant and without time trend")
-print(out[[6]])
-#plot(out[[6]])
+ad <- out[[6]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
+
 print("With constant and without time trend")
-print(out[[4]])
-#plot(out[[4]])
+ad <- out[[4]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
 print("With constant and with time trend")
-print(out[[5]])
+ad <- out[[5]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
 #plot(out[[5]])
 
 
@@ -300,7 +311,7 @@ present higher p-values, thus the specification we are going to select is the fi
 This is consistent with what we should expect, since $rea_{t}$ is computed as a percentage deviation from the mean (it's basically an indicator of the business cycle).
 
 Thus, the specification we select in the end is:
-$$ \delta rea_t = \sigma_1 \delta reat_{t-1} + ... + \sigma_12 \delta reat_{t-13}$$
+$$ \delta rea_t =  \delta_1 \Delta reat_{t-1} + ... +  \delta_12 \Delta reat_{t-13}$$
 
 
 # Point 2
@@ -342,11 +353,24 @@ with lower adf value.
 #analysis ts
 
 print("Without constant and without time trend")
-out[[6]]
+ad <- out[[6]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
+
 print("With constant and without time trend")
-out[[4]]
+ad <- out[[4]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
 print("With constant and with time trend")
-out[[5]]
+ad <- out[[5]]
+ad
+print("Max lag : 12")
+print(paste("Lag used:", ad$lag.used ))
+print(paste("BIC:", ad$bic))
 ```
 
 The test above shows the stationarity of the process  with an $\alpha>=1%$, (indipendetemente dalla specificazione) 
@@ -357,11 +381,14 @@ Thus, the order of integration of the $rea$ is the second one, because the serie
 We select the best arma model setting the iper-paramenters (p,q), using the BIC criteria:
 
 ```{r point3, echo = FALSE, include = TRUE}
-# best_arima <- bestarima(timeseries, 4)
-# best_arima
-# arma <- arima(timeseries, order = best_arima, method = "ML")
-# summary(arma)
-# plot(acf(arma$residuals))
+best_arima <- bestarima(timeseries, 4)
+
+arma <- arima(timeseries, order = best_arima, method = "ML")
+print(paste("BIC:", bic_score(length(arma$coef), arma$nobs, arma$loglik)))
+summary(arma)
+plot(arma)
+plot(acf(arma$residuals))
+plot(pacf(arma$residuals))
 
 ```
 
@@ -379,13 +406,12 @@ the usual practice. But the aim of this model is not to provide a prediction for
 adf.test(oil$Dprod)
 adf.test(oil$rea)
 adf.test(oil$rpo)
-# lag length
-out     <- VARselect(oil, lag.max = 24, type = "const")
-lag     <-  out$selection[1]
-lag
+
+
+#bic_score(length(arma$coef), arma$nobs, arma$loglik))
 
 # estimation
-var_model_lev <- VAR(oil, p = lag, type = "const")
+var_model_lev <- VAR(oil, lag = 3, type = "const", ic= "AIC")
 res           <- residuals(var_model_lev)
 par(mfrow = c(3, 1))
 acf(res[, 1])
@@ -399,12 +425,12 @@ pacf(res[, 3])
 
 # Calculate summary statistics
 model_summary <- summary(var_model_lev)
-
+model_summary
 # Obtain variance-covariance matrix
 model_summary$covres
 model_summary$corres
 
-roots(var_model_lev) #no stationary
+invroots <- roots(var_model_lev)  #no stationary
 
 oir <- irf(var_model_lev, impulse = colnames(oil),
             response = colnames(oil), n.ahead = 25,

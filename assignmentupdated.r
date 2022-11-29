@@ -23,9 +23,7 @@ adf_test <- function(timeseries) { # nolint
     colnames(out) <- out_colnames
 
     for (count in 1:12) {
-        i   <<-  adf.test(timeseries, nlag = count, output = FALSE)
-        #i   <-  ur.df2( timeseries, type ="none", lags = 12, 
-        #                selectlags = "BIC", digit = 2)
+        i   <<-  adf.test(timeseries, output = FALSE)
 
         for (count2 in 1:3) {
 
@@ -217,6 +215,14 @@ plot(out[[3]])
 
 print("Without constant and without time trend")
 out[[6]]
+print("Max lag : 12")
+print(paste("Lag used:", i$lag.used ))
+print(paste("BIC:", i$bic ))
+i <- out[[6]]
+i$lags
+
+i$
+
 print("With constant and without time trend")
 out[[4]]
 print("With constant and with time trend")
