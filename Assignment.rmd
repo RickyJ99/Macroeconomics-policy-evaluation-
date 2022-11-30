@@ -516,32 +516,32 @@ restriction in order to get a unique solution.
 # plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[2],
             response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[3],
             response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[2],
             response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[3],
             response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
+             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 ```
@@ -692,11 +692,11 @@ companionmatrix <- function (x)
 HD <- VARhd(Estimation = var_model_lev)
 
 
-ex <- HD[,,1]
+ex <- HD[,,2]
 ex1 <- as.data.frame(ex) # transforming the HD matrix as data frame #
-ex2 <- ex1[3:84, 1:3] # taking our the first 2 rows as they are N/As #
-colnames(ex2) <- c("Delta production", 
-"Real economic activity", "Real price of oil") # renaming columns #
+ex2 <- ex1[3:419, 1:3] # taking our the first 2 rows as they are N/As #
+colnames(ex2) <- c("Oil Supply shock", 
+"Oil-market specific shock", "Aggregate Demand shock") # renaming columns #
 ex2$Period <- 1:nrow(ex2) # creating an id column #
 col_id <- grep("Period", names(ex2)) # setting the new variable as id #
 ex3 <- ex2[, c(col_id,
@@ -706,8 +706,16 @@ molten.ex <- melt(ex3, id = "Period") # melting the data frame #
 ggplot(molten.ex, aes(x = Period, y = value, fill = variable)) + 
 geom_bar(stat = "identity") + 
 guides(fill = guide_legend(title= "Legend", reverse = TRUE)) +
-theme(legend.position="bottom")
-
-
-
+theme(legend.position="bottom") #+
+#geom_line(aes(y = rpo, x=Period), color = "red", linetype = "dotted")
 ```
+
+We can see from this graph that the real price of oil ($rpo$) is 
+primarily driven by oil-market specific shocks. Oil supply
+shocks have also a big impact but they tend to disappear after
+few periods, thus having a smaller overall impact on the dynamics
+of the real price of oil.
+The aggregate demand shock component has also a significant role, 
+but it seems to present an high level of persistence (look for example
+at the period between 1975 and 1985, where the effect of the aggregate
+demand shocks persist in driving the $rpo$ upward).
