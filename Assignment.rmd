@@ -181,9 +181,9 @@ to      <- as.Date("2007-12-01")
 
 The plot below represents three monthly time series, in the order:
 \begin{enumerate}
-  \item $\Delta\,prod:\;\; \% $ change in global crude oil production
-  \item $rpo_{t}$: the real price of oil
-  \item $rea_{t}:$ index of the real economic activity
+  \item $\Delta\,prod:\;\; \% $ change in global crude oil production (seen in blue)
+  \item $rpo_{t}$: the real price of oil (seen in red)
+  \item $rea_{t}:$ index of the real economic activity (seen in green)
 \end{enumerate}
 from 1973:1 to 2007:12.
 
@@ -195,10 +195,9 @@ oil     <- xts(oil, order.by = yq)
 l_yq    <- length(yq)
 
 plot(oil, col = c("#0077ff", "#ff00a2", "#48ff00"))
-legend("top", legend = c("prod", "rea", "price"),
+legend(x="bottomright", legend = c("prod", "rea", "price"),
        col = c("#0077ff", "#ff00a2", "#48ff00"),
        lty = 1:1, cex = 1)
-title("Yield curve at 2020")
 #I(1)
 
 ```
@@ -330,7 +329,7 @@ an $I(1)$ process, and we defined the order of integration as the number of diff
 
 # Point 3
 
-We select the best arma model setting the hyper-paramenters (p,q), using the BIC criteria, through the "best_arima" and the "bic_score" functions
+We select the best ARMA model setting the hyper-paramenters (p,q), using the BIC criteria, through the "best_arima" and the "bic_score" functions
 reported below
 
 ```{r point3, echo = TRUE, include = TRUE}
@@ -465,14 +464,19 @@ points(root.comp, root.real, pch=19)
 legend(-1.5, -1.5, legend= "Eigenvalues", pch=19)
 
 ```
+Following the BIC criterion, we selected 2 lags for our VAR model. 
 
+As you can see from the inverse roots plot, all inverse roots lie
+within the unit circle, thus we can confidently say that the process is stationary. 
+
+Same conclusions can be drawn by analyzing the plots of the residuals that you can see reported above.
 
 ## Point 5
 
 We report below the mapping from the text of the assignment:
 
 $$ \left[\begin{matrix}
-e_{t}^{\Delta\prod}  \\
+e_{t}^{\Delta\,prod}  \\
 e_{t}^{rea}  \\
 e_{t}^{rpo} 
 \end{matrix}\right]
@@ -505,45 +509,74 @@ restriction in order to get a unique solution.
 
 
 
-oir <- irf(var_model_lev, impulse = colnames(oil),
-            response = colnames(oil)[1], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
-)
-plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil),
+# oir <- irf(var_model_lev, impulse = colnames(oil),
+#             response = colnames(oil)[1], n.ahead = 25,
+#              ortho = TRUE, runs = 2500, seed = 12345
+# )
+# plot(oir)
+oir <- irf(var_model_lev, impulse = colnames(oil)[1],
             response = colnames(oil)[2], n.ahead = 25,
              ortho = TRUE, runs = 2500, seed = 12345
-)
-plot(oir)
-oir <- irf(var_model_lev, impulse = colnames(oil),
-            response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 2500, seed = 12345
-)
-plot(oir)
-```
-
-
-```{r point6, echo = FALSE}
-oir <- irf(var_model_lev, impulse = colnames(oil)[1],
-            response = colnames(oil)[1], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[2],
             response = colnames(oil)[2], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
+             ortho = TRUE, runs = 2500, seed = 12345
+)
+plot(oir)
+oir <- irf(var_model_lev, impulse = colnames(oil)[3],
+            response = colnames(oil)[2], n.ahead = 25,
+             ortho = TRUE, runs = 2500, seed = 12345
+)
+plot(oir)
+oir <- irf(var_model_lev, impulse = colnames(oil)[1],
+            response = colnames(oil)[3], n.ahead = 25,
+             ortho = TRUE, runs = 2500, seed = 12345
+)
+plot(oir)
+oir <- irf(var_model_lev, impulse = colnames(oil)[2],
+            response = colnames(oil)[3], n.ahead = 25,
+             ortho = TRUE, runs = 2500, seed = 12345
 )
 plot(oir)
 oir <- irf(var_model_lev, impulse = colnames(oil)[3],
             response = colnames(oil)[3], n.ahead = 25,
-             ortho = TRUE, runs = 1000, seed = 12345
+             ortho = TRUE, runs = 2500, seed = 12345
 )
 plot(oir)
 ```
 
-# Point 6
+We can see from the impulse response function of $rea$ that:
+\begin{itemize}
+  \item a negative shock to oil supply leads to an initial increase in real economic activity (delayed
+  by 2 or 3 periods) which then is reabsorbed pretty rapidly. Note that if you look at the confidence bands
+  for the 95\% confidence level, the response of $rea$ to a negative oil supply shock is always non-distinguishable
+  from zero. (NOTE: the graph is mirrored with respect to what we reported above)
+  \item a positive shock to aggregate demand leads to an initial increas in real economic activity (immediate) that peaks after 4 periods and
+  then decreases in the long run, being almost insignificant after 24 periods (2 years)
+  \item a positive shock to oil market specific demand leads to a gradual increase in real economic activity that
+  peaks after 5 periods, and then goes to zero in the long run (note that after 5 periods is already insignificant).
+  Note that probably the relationship is inverted here: it seems more realistic that an increase in real economic activity
+  leads to an increse in oil-market specific demand than the other way around.
+\end{itemize}
+We can see from the impulse response function of $rpo$ that:
+\begin{itemize}
+  \item a negative shock to oil supply leads to an increase in the real price of oil, which anyway is not significant
+  at the 95\% confidence level, and anyway is completely gone after a few periods even if you use lower significance levels.
+  (NOTE: the graph is mirrored with respect to what we reported above)
+  \item a positive shock to aggregate demand leads to a positive and persistent change in the real price of oil.
+  Even in  the long run, we are not witnessing a return to the pre-shock levels of $rpo$. This is consistent with the idea 
+  that the business cycle shock leads to long-run effects in the price level (since, as we know, inflation is persistent, 
+  and rarely negative shocks deflate prices).
+  \item a positive shock to oil market specific demand leads to (as we should expect) a significant increase in $rpo$, which
+  peaks after 4 periods and then decreases in the long run, being almost insignificant after 24 periods (2 years).
+\end{itemize}
 
-```{r point7, echo = FALSE, include=TRUE}
+
+
+# Point 7
+
+```{r point7, echo = FALSE, include=TRUE, out.height="150%"}
 VARhd <- function(Estimation){
 
   ## make X and Y
@@ -672,6 +705,9 @@ molten.ex <- melt(ex3, id = "Period") # melting the data frame #
 
 ggplot(molten.ex, aes(x = Period, y = value, fill = variable)) + 
 geom_bar(stat = "identity") + 
-guides(fill = guide_legend(reverse = TRUE))
+guides(fill = guide_legend(title= "Legend", reverse = TRUE)) +
+theme(legend.position="bottom")
+
+
 
 ```
